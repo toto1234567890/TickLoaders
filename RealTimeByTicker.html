@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+    <html lang="en">
+    <head>
+    	<title>Hey !!</title>
+    	<meta charset="UTF-8">
+    	<meta name="viewport" content="width=device-width, initial-scale=1">
+    	<link rel="shortcut icon" href="../static/avatar.png"/>
+    	<link rel="stylesheet" href="../static/w3c/css/w3.css">
+        <link rel="stylesheet" href="../static/w3c/css/prism.css">
+    	<link rel="stylesheet" href="../static/fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+    	<link rel="stylesheet" href="../static/bootstrap/css/bootstrap.min.css">
+        <link rel="stylesheet" href="../static/highlight/default.min.css">
+        
+        <script src="../static/js/lightweight-charts.js"></script>
+        <script src="../static/js/prism.js"></script>
+    	<script src="../static/js/jquery.min.js"></script>
+    	<script src="../static/js/popper.min.js"></script>
+    	<script src="../static/bootstrap/js/bootstrap.min.js"></script>
+    	<script src="../static/highlight/highlight.min.js"></script>
+    </head>
+    <style>
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            color: black;
+            text-align: center;
+        }
+        .blink {
+            animation: blinker 0.25s;
+        }
+        @keyframes blinker {
+            from { opacity: 0.5; }
+            100% { opacity: 1.0; }
+            to { opacity: 0.5; }
+        }
+        .sticky {
+            position: fixed;
+            top: 0;
+            width: 100%
+        }
+    </style>
+
+
+
+    <body>
+        
+        <div class="container text-center">
+            <h5><br></h5>
+            <div class="header" id="stickyHeader">
+                <h4>   
+                    <div><strong id="broker_ticker">Broker-Ticker</strong></div>    
+                    <button id="connectionIcon" type="button" class="btn btn-link" style="color: blue;" data-toggle="modal" data-target="#connectionLogModal" onclick="infos_connection()"><i class="fa fa-spinner fa-fw"></i></button>
+                </h4>
+            </div>
+            <div id="broker" class="container text-right">
+                <button type="button" id="ToggleRefresh" onclick="toggleAutoRefresh()"><i class="fa fa-recycle fa-fw"></i> Auto Refresh On</button>
+            </div>
+            <hr>
+            
+
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+            <!-- Connection log -->
+            <div class="modal fade" id="connectionLogModal" role="dialog">
+                <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
+                    <div class="modal-content" style="border: 3px solid #000000; ">
+                        <div class="modal-header bg-light">
+                            <h4 class="modal-title">Connections log :</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <h4 id="ConnnectionInfos" name="ConnnectionInfos" style="text-align: left;"></h4>
+                            <table class="table" id="TableConnnectionInfos">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalContent">
+
+                                </tbody> 
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>  
+
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+            <!-- Show error -->  
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <p id="connectionStatus"></p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="patternChart"></div>
+            <br>
+            <hr>
+            <div id="volumeChart"></div>
+            <br>
+            <hr>
+            <div id="volatilityChart"></div>
+            <br>
+            <hr>
+            <div id="Tick_Datas"></div>
+
+        </div>
+        
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->        
+        <footer class="footer font-sizesmall">
+            <!-- Copyright alike -->
+            <div class="footer text-center py-3" style="font-size: small;">
+                Candle chart Js code :<a href="https://tradingview.github.io/lightweight-charts"> Lightweight Charts</a> 
+            </div>
+            <!-- Copyright alike -->
+        </footer>
+
+
+    <script>
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    // init...
+    const params = new URLSearchParams(window.location.search);
+    const server = params.get('server');
+    const port = params.get('port');
+    const broker_ticker = params.get('broker_ticker');
+    const broker = broker_ticker.split('-')[0]
+    const ticker = broker_ticker.split('-')[1]
+    document.getElementById('broker_ticker').innerHTML = broker_ticker
+
+    if (localStorage.getItem('AutoRefreshReatimeServer')===null) {localStorage.setItem('AutoRefreshReatimeServer', 'true');}
+        toggleAutoRefresh(change=false);
+    if (localStorage.getItem('webPageConnexionReatimeServer')===null) {localStorage.setItem('webPageConnexionReatimeServer', 'true');}
+        toggleAutoRefresh(change=false);
+
+    var cpt=0; var connection={};
+    if (cpt > 0) {connection[++cpt]={"Date": formatDateUTC(new Date()), "Message": "Web page relaunched"};}
+    else {connection[cpt]={"Date": formatDateUTC(new Date()), "Message": "Web page started"};}
+
+
+    function infos_connection() {
+        const tableBody = document.getElementById("modalContent");
+        tableBody.innerHTML='';
+        for (let key in connection) {
+            let i = 0;
+            let row = tableBody.insertRow();
+            row.insertCell(i++).textContent = connection[key].Date;
+            row.insertCell(i++).textContent = connection[key].Message;
+        }
+    }
+
+    const connectionStatusElement = document.getElementById("connectionStatus");
+    const button = document.getElementById('connectionIcon');
+    function updateConnectionStatus(status="Connectiong...") {
+        switch(status) {
+            case 'Connected':
+                button.innerHTML = '<button id="connectionIcon" type="button" class="btn btn-link" style="color: green;" data-toggle="modal" data-target="#connectionLogModal" onclick="infos_connection()"><i class="fa fa-check-circle fa-fw"></i></button>';
+                break;
+            case 'Connecting...':
+                button.innerHTML = '<button id="connectionIcon" type="button" class="btn btn-link" style="color: blue;" data-toggle="modal" data-target="#connectionLogModal" onclick="infos_connection()"><i class="fa fa-spinner fa-spin fa-fw"></i></button>';
+                break;
+            case 'Connection closed':
+                button.innerHTML = '<button id="connectionIcon" type="button" class="btn btn-link" style="color: red; data-toggle="modal" data-target="#connectionLogModal" onclick="infos_connection()""><i class="fa fa-times-circle fa-fw"></i></button>';
+                break;
+            default:
+                connectionStatusElement.textContent = status;
+                break;
+        }
+    }
+
+    // treat realtime datas 
+    function getCurrentTime() {
+        return Math.floor(Date.now())
+    }
+
+    function formatDateUTC(date) {
+        const year = String(date.getUTCFullYear());
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+        const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds},${milliseconds}`;
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    // Page auto-reload
+    function reloadPage() {
+        if (ws === null) {
+            if (localStorage.getItem('AutoRefreshReatimeServer')==='true') { 
+                location.reload();
+            }
+        }
+        else if (ws.readyState !== WebSocket.OPEN) {
+            if (localStorage.getItem('AutoRefreshReatimeServer')==='true') { 
+                location.reload();
+            }
+        }
+    }
+
+    function toggleAutoRefresh(change=true) {
+        if (localStorage.getItem('AutoRefreshReatimeServer')==='true') { 
+            if (change) {
+                localStorage.setItem('AutoRefreshReatimeServer', 'false'); 
+                document.getElementById('ToggleRefresh').innerHTML = '<i class="fa fa-recycle fa-fw"></i> Auto Refresh Off';
+            }
+            else {
+                document.getElementById('ToggleRefresh').innerHTML = '<i class="fa fa-recycle fa-fw"></i> Auto Refresh On';
+            }
+        }
+        else { 
+            if (change) {
+                localStorage.setItem('AutoRefreshReatimeServer', 'true'); 
+                document.getElementById('ToggleRefresh').innerHTML = '<i class="fa fa-recycle fa-fw"></i> Auto Refresh On'; 
+                location.reload();
+            }
+            else {
+                document.getElementById('ToggleRefresh').innerHTML = '<i class="fa fa-recycle fa-fw"></i> Auto Refresh Off';
+            }
+        }
+    }
+    window.onscroll = function() {myFunction()};
+
+    var header = document.getElementById("stickyHeader");
+    var sticky = header.offsetTop;
+
+    function myFunction() {
+      if (window.pageYOffset > sticky) {
+        header.classList.add("sticky");
+      } else {
+        header.classList.remove("sticky");
+      }
+    }
+
+    // Set a timeout to reload the page every 10 seconds
+    setTimeout(reloadPage, 10000); 
+
+// init...
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+
+
+        // Adding a window resize event handler to resize the chart when
+        // the window size changes.
+        // Note: for more advanced examples (when the chart doesn't fill the entire window)
+        // you may need to use ResizeObserver -> https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
+        window.addEventListener('resize', () => {
+            chart.resize(mainChart.offsetWidth, mainChart.offsetHeight);
+        });
+    </script>
+    <script type="module">
+        // websocket are not recreated, if connection already exists..
+        import {patternChart} from './static/analyst/charts.js';
+        import {volumeChart} from './static/analyst/charts.js';
+        import {volatilityChart} from './static/analyst/charts.js';
+        import {TickDatas} from './static/analyst/charts.js';
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+        var talib_function_groups;
+        fetch(`http://127.0.0.1:9876/talib_function_groups`)
+            .then(response => response.json())
+            .then(data => { talib_function_groups=data;
+
+            const websocketPattern = 'ws://127.0.0.1:8766/binance-btcusdt';
+            new patternChart('patternChart', websocketPattern, talib_function_groups);
+
+            const websocketTaVolume = 'ws://127.0.0.1:8766/binance-btcusdt';
+            const websocketTickVolume = 'ws://127.0.0.1:52254/binance-btcusdt';
+            new volumeChart('volumeChart', websocketTaVolume, websocketTickVolume, talib_function_groups);
+
+            const websocketTaVolatility = 'ws://127.0.0.1:8766/binance-btcusdt';
+            const websocketTickPrice = 'ws://127.0.0.1:52254/binance-btcusdt';
+            new volatilityChart('volatilityChart', websocketTaVolatility, websocketTickPrice, talib_function_groups);
+
+            const websocketDatas = 'ws://127.0.0.1:52254/binance-btcusdt';
+            new TickDatas('Tick_Datas', websocketDatas);
+        });
+    });
+
+</script>
+</body>
+
+</html>
