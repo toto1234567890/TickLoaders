@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<title>Hey !!</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="shortcut icon" href="../static/img/avatar.png"/>
+	<link rel="stylesheet" href="../static/w3c/css/w3.css">
+    <link rel="stylesheet" href="../static/w3c/css/prism.css">
+	<link rel="stylesheet" href="../static/fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="../static/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/highlight/default.min.css">
+    
+    <script src="../static/js/lightweight-charts.js"></script>
+    <script src="../static/js/prism.js"></script>
+	<script src="../static/js/jquery.min.js"></script>
+	<script src="../static/js/popper.min.js"></script>
+	<script src="../static/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../static/highlight/highlight.min.js"></script>
+</head>
+    <style>
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            color: black;
+            text-align: center;
+        }
+        .blink {
+            animation: blinker 0.25s;
+        }
+        @keyframes blinker {
+            from { opacity: 0.5; }
+            100% { opacity: 1.0; }
+            to { opacity: 0.5; }
+        }
+         /* colapsible header */ 
+         .collapsible {
+            background-color: #777;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+        }
+        .active, .collapsible:hover {
+            background-color: #555;
+        }
+        .collapsible:after {
+            content: '\002B';
+            color: white;
+            font-weight: bold;
+            float: right;
+            margin-left: 5px;
+        }
+        .active:after {
+            content: "\2212";
+        }
+        .content {
+            display: none;
+            padding: 0 18px;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+        .sticky {
+            position: sticky;
+            top: 0;
+        }
+        /* colapsible header */
+    </style>
+
+
+
+<body>
+    <div class="container text-center">
+
+        <!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+                   <!-- searchbar header -->  
+                    <div>
+                        <button class="collapsible"></button>
+                        <div id="collapsibleDiv" class="content" style="max-height: 100%;">
+                            <h2>Demo indicators               
+                                <button type="button" class="btn btn-link" id="AnalystTickersList" data-toggle="modal" data-target="#AnalystConfigForm" onclick="analyst_config(['tick_loaders'])"><i class="fa fa-list fa-fw"></i></button>
+                            </h2>
+                            <br>
+                            <div id="searchBar"></div>
+                                <button id="duplicateView" type="button" class="btn btn-warning mt-3"><i class="fa fa-external-link-square fa-fw"></i></button>
+                            <br>
+                            <hr>
+                        </div>
+                    </div>
+
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+            <!-- Modal analyst config -->
+            <div class="modal fade" id="AnalystConfigForm" role="dialog">
+                <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
+                    <div class="modal-content" style="border: 3px solid #000000; ">
+                        <div class="modal-header bg-light">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body" id="AnalystConfigFormBody">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+            <!-- Connection log -->
+            <div class="modal fade" id="connectionLogModal" role="dialog">
+                <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
+                    <div class="modal-content" style="border: 3px solid #000000; ">
+                        <div class="modal-header bg-light">
+                            <h4 class="modal-title">Connections log :</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <h4 id="ConnnectionInfos" name="ConnnectionInfos" style="text-align: left;"></h4>
+                            <table class="table" id="TableConnnectionInfos">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalContent">
+
+                                </tbody> 
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>  
+
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+            <!-- Show error -->  
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <p id="connectionStatus"></p>
+                    </div>
+                </div>
+            </div>
+
+<!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <h3 id="IndicatorsInfos" name="IndicatorsInfos" style="text-align: left;">  
+        <button id="connectionIcon" type="button" class="btn btn-link" style="color: blue;" data-toggle="modal" data-target="#connectionLogModal" onclick="infos_connection()"><i class="fa fa-spinner fa-fw"></i></button>
+        <span id="broker_ticker">binance-btcusdt</span>
+        <!-- broker_ticker inserted here -->
+    </h3>
+    <br><br>
+
+    <div id="patternChart"></div>
+    <br>
+    <hr>
+    <div id="volumeChart"></div>
+    <br>
+    <hr>
+    <div id="volatilityChart"></div>
+    <br>
+    <hr>
+    <div id="Tick_Datas"></div>
+    
+    <!--------------------------------------------------------------------------------------------------------------------------------------------------------------------->        
+    <footer class="footer font-sizesmall">
+        <!-- Copyright alike -->
+        <div class="footer text-center py-3" style="font-size: small;">
+            Js chart code :<a href="https://tradingview.github.io/lightweight-charts"> Lightweight Charts</a> 
+        </div>
+        <!-- Copyright alike -->
+    </footer>
+
+
+<script>
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    // init...
+    var broker_ticker;
+    var config;
+
+    var cpt=0; var connection={};
+    if (cpt > 0) {connection[++cpt]={"Date": formatDateUTC(new Date()), "Message": "Web page relaunched"};}
+    else {connection[cpt]={"Date": formatDateUTC(new Date()), "Message": "Web page started"};}
+
+
+    function infos_connection() {
+        const tableBody = document.getElementById("modalContent");
+        tableBody.innerHTML='';
+        for (let key in connection) {
+            let i = 0;
+            let row = tableBody.insertRow();
+            row.insertCell(i++).textContent = connection[key].Date;
+            row.insertCell(i++).textContent = connection[key].Message;
+        }
+    }
+
+    function pattern(datas) {
+        const tableBody = document.getElementById("tablePatterns");
+        tableBody.innerHTML='';
+        for (let key in datas) {
+            if (key.startsWith("stream_CDL")) {
+                let i = 0;
+                let row = tableBody.insertRow();
+                let cellPattern = row.insertCell(i++); cellPattern.classList.add('blink'); cellPattern.textContent = key;
+                let cellPatternVal = row.insertCell(i++); cellPatternVal.classList.add('blink'); cellPatternVal.textContent = datas[key];
+            }
+        }
+    }
+
+    function indicators(datas) {
+        const tableBody = document.getElementById("tableIndicators");
+        tableBody.innerHTML='';
+        for (let key in datas) {
+            if (!key.startsWith("stream_CDL")) {
+                let i = 0;
+                let row = tableBody.insertRow();
+                let cellPattern = row.insertCell(i++); cellPattern.classList.add('blink'); cellPattern.textContent = key;
+                let cellPatternVal = row.insertCell(i++); cellPatternVal.classList.add('blink'); cellPatternVal.textContent = datas[key];
+            }
+        }
+    }
+    
+    const connectionStatusElement = document.getElementById("connectionStatus");
+    const button = document.getElementById('connectionIcon');
+    const icon = button.querySelector('i');
+    function updateConnectionStatus(status="Connecting...") {
+        switch (status) {
+            case 'Connection open':
+                button.style.color = 'green';
+                icon.className = 'fa fa-check-circle fa-fw';
+                break;
+            case 'Connecting...':
+                button.style.color = 'blue';
+                icon.className = 'fa fa-spinner fa-spin fa-fw';
+                break;
+            case 'Connection closed':
+                button.style.color = 'red';
+                icon.className = 'fa fa-times-circle fa-fw';
+                break;
+            default:
+                connectionStatusElement.textContent = status;
+        }
+    }
+
+    function onmessage(data) {
+            try {
+                delete data.price; 
+                delete data.volume;
+                delete data.date;
+                indicators(data);
+                pattern(data);
+            } 
+            catch (error) {
+                indicators(error);
+                connection[++cpt]={"Date": formatDateUTC(new Date()), "Message": "Message processing error"};
+            }
+        };
+
+    function onopen(event) {
+        updateConnectionStatus("Connection open");
+        connection[++cpt]={"Date": formatDateUTC(new Date()), "Message": "Connection open"};
+    };
+
+    function onclose(event) {
+        updateConnectionStatus("Connection closed");
+        connection[++cpt]={"Date": formatDateUTC(new Date()), "Message": "Connection closed : "+event.code};
+    };
+
+    function onerror (error) {
+        indicators(error);
+        connection[++cpt]={"Date": formatDateUTC(new Date()), "Message": error.type};
+    };
+
+    function formatDateUTC(date) {
+        const year = String(date.getUTCFullYear());
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+        const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }  
+    
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    // Config
+    function analyst_config(sections) {
+        const sectionQuery = sections.map(encodeURIComponent).join(',');
+        $.ajax({
+            type: "GET",
+            url: `/analyst_config?sections=${sectionQuery}`,
+            contentType: 'application/json',
+            success: function(response) {
+                $('#AnalystConfigForm').html(response);
+                $('#AnalystConfigForm').modal('show');
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                if (jqXHR.responseJSON && jqXHR.responseJSON.detail) {
+                    // Display specific error from the server
+                    alert("Error: " + jqXHR.responseJSON.detail);
+                } else {
+                    // Display a generic error message
+                    alert("Error: " + errorThrown);
+                }
+            }
+        });
+    }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    // Duplicate view
+    document.getElementById('duplicateView').addEventListener('click', function() {
+        // Open a new window
+        const newWindow = window.open('', '_blank', 'width=800,height=600');
+        // Clone the entire document
+        const originalDoc = document.documentElement.cloneNode(true);
+        // Hide specific class attribute from the cloned document
+        var elements = originalDoc.querySelectorAll('.resizable');
+        elements.forEach(function(element) {element.classList.remove('resizable');});
+        // Hide card 
+        const elementToHide = originalDoc.querySelectorAll('.hiddable');
+        elementToHide.forEach(button => button.style.display = 'none');
+        // Hide collapsible 
+        const collEx = originalDoc.querySelector("#collapsibleDiv");
+        collEx.style.display = "none";
+
+        // Write the modified document to the new window
+        newWindow.document.open();
+        newWindow.document.write('<!DOCTYPE html>' + originalDoc.outerHTML);
+        newWindow.document.close();
+    });
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    // Collapse functions
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === 'block'){
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            } 
+        });
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    // SearchBar change data source
+    function changeDatasource(source) {
+        let params = new URLSearchParams(window.location.search);
+        params.set('broker_ticker', source.value);
+        window.location.search = params.toString();
+    }
+
+    function updateTitle(broker_ticker) {
+        document.getElementById("broker_ticker").textContent = broker_ticker;
+    }
+
+// init...
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+    // Adding a window resize event handler to resize the chart when
+    // the window size changes.
+    // Note: for more advanced examples (when the chart doesn't fill the entire window)
+    // you may need to use ResizeObserver -> https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
+    //window.addEventListener('resize', () => {
+    //    chart.resize(mainChart.offsetWidth, mainChart.offsetHeight);
+    //});
+    </script>
+
+    <script type="module">
+
+        import {getConfigData} from '../static/analyst/getConfigData.js';
+        let wsTaAddress = getConfigData(["2 Parser-REALTIMETA",]);
+        let analystServerAddress = getConfigData(["2 Parser-ANALYST",]);
+
+        // websocket are not recreated, if connection already exists..
+        import {patternChart} from '../static/analyst/charts.js';
+        import {volumeChart} from '../static/analyst/charts.js';
+        import {volatilityChart} from '../static/analyst/charts.js';
+        import {TickDatas} from '../static/analyst/charts.js';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let params = new URLSearchParams(window.location.search);
+            broker_ticker = params.get('broker_ticker') ?? "binance-btcusdt";
+            updateTitle(broker_ticker);
+
+            const TaChartDataSource = 'ws://'+wsTaAddress.REALTIMETA_SERVER+':'+wsTaAddress.REALTIMETA_WS_PORT+'/'+broker_ticker;
+            const TickChartDataSource = 'ws://'+wsTaAddress.REALTIMETA_SERVER+':'+wsTaAddress.REALTIMETA_WS_PORT+'/'+broker_ticker;
+
+            var talib_function_groups;
+            fetch(`http://127.0.0.1:9876/talib_function_groups`)
+                .then(response => response.json())
+                .then(data => { talib_function_groups=data;
+
+                const websocketPattern = TaChartDataSource;
+                new patternChart({containerId: 'patternChart', websocketUrl: websocketPattern, talib_function_groups: talib_function_groups});
+
+                const websocketTickVolume = 'ws://127.0.0.1:52254/binance-btcusdt';
+                const websocketTaVolume = TaChartDataSource;
+                new volumeChart({containerId: 'volumeChart', websocketTickUrl: websocketTickVolume, websocketTaUrl: websocketTaVolume, talib_function_groups: talib_function_groups});
+
+                const websocketTaVolatility = TaChartDataSource;
+                const websocketTickPrice = 'ws://127.0.0.1:52254/binance-btcusdt';
+                new volatilityChart({containerId: 'volatilityChart', websocketTickUrl: websocketTickVolume, websocketTaUrl: websocketTaVolume, talib_function_groups: talib_function_groups});
+
+                const websocketDatas = 'ws://127.0.0.1:52254/binance-btcusdt';
+                new TickDatas({ containerId: 'Tick_Datas', websocketUrl: websocketDatas });
+            });
+        });
+
+        import searchBar from "../static/analyst/searchBar.js";
+        const TheBare = new searchBar('searchBar', 'http://'+analystServerAddress.ANALYST_SERVER+':'+analystServerAddress.ANALYST_PORT+'/_load_search_data', changeDatasource); 
+
+    </script>
+
+</body>
+
+</html>
